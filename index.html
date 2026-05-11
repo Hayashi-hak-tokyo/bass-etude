@@ -518,7 +518,9 @@
         };
 
         const generateAbcString = (bassline, style) => {
-            let abc = `X:1\nT:Bassline Etude\nM:4/4\nK:C\nL:1/16\nV:1 clef=bass\n%%stretchlast 1\n`;
+            // Funkモードの時だけ横幅を広げて16分音符を収める。Swingはデフォルトの自然な幅にする。
+            let staffWidth = style === STYLES.FUNK ? "\n%%staffwidth 1200" : "";
+            let abc = `X:1\nT:Bassline Etude\nM:4/4\nK:C\nL:1/16\nV:1 clef=bass\n%%stretchlast 1${staffWidth}\n`;
             
             bassline.forEach((measure, mIndex) => {
                 let chordDisplay = measure.chords.map(c => c.name).join(' ');
@@ -526,36 +528,66 @@
                 let measureAccidentals = {};
                 
                 let measureAbcStr = "";
-                for (let beat = 0; beat < 4; beat++) {
-                    let beatAbc = "";
-                    let s = 0;
-                    while (s < 4) {
-                        let absoluteStep = beat * 4 + s;
-                        const note = measure.notes.find(n => n.step === absoluteStep);
-                        if (note) {
-                            let len = note.duration === '16n' ? 1 : note.duration === '8n' ? 2 : note.duration === '4n' ? 4 : 1;
-                            if (s + len > 4) len = 4 - s; 
-                            
-                            const abcNote = toAbcNote(note.note, measureAccidentals);
-                            const prefix = note.type === 'ghost' ? '!style=x!' : '';
-                            beatAbc += `${prefix}${abcNote}${len > 1 ? len : ''}`;
-                            s += len;
-                        } else {
-                            let restLen = 1;
-                            while(s + restLen < 4 && !measure.notes.find(n => n.step === absoluteStep + restLen)) {
-                                restLen++;
+                
+                if (style === STYLES.SWING) {
+                    // Swing用のシンプルな描画ロジック（間延びを防ぎ、8分音符は2つで連桁する）
+                    for (let beat = 0; beat < 4; beat++) {
+                        let step = beat * 4;
+                        const note1 = measure.notes.find(n => n.step === step);
+                        
+                        if (note1) {
+                            if (note1.duration === '4n') {
+                                measureAbcStr += `${toAbcNote(note1.note, measureAccidentals)}4 `;
+                            } else if (note1.duration === '8n') {
+                                measureAbcStr += `${toAbcNote(note1.note, measureAccidentals)}2`;
+                                const note2 = measure.notes.find(n => n.step === step + 2);
+                                if (note2) {
+                                    measureAbcStr += `${toAbcNote(note2.note, measureAccidentals)}2 `;
+                                } else {
+                                    measureAbcStr += `z2 `;
+                                }
                             }
-                            beatAbc += `z${restLen > 1 ? restLen : ''}`;
-                            s += restLen;
+                        } else {
+                            measureAbcStr += `z4 `;
                         }
                     }
-                    measureAbcStr += beatAbc + " ";
+                } else {
+                    // Funk用の描画ロジック
+                    for (let beat = 0; beat < 4; beat++) {
+                        let beatAbc = "";
+                        let s = 0;
+                        while (s < 4) {
+                            let absoluteStep = beat * 4 + s;
+                            const note = measure.notes.find(n => n.step === absoluteStep);
+                            if (note) {
+                                let len = note.duration === '16n' ? 1 : note.duration === '8n' ? 2 : note.duration === '4n' ? 4 : 1;
+                                if (s + len > 4) len = 4 - s; 
+                                
+                                const abcNote = toAbcNote(note.note, measureAccidentals);
+                                const prefix = note.type === 'ghost' ? '!style=x!' : '';
+                                beatAbc += `${prefix}${abcNote}${len > 1 ? len : ''}`;
+                                s += len;
+                            } else {
+                                let restLen = 1;
+                                while(s + restLen < 4 && !measure.notes.find(n => n.step === absoluteStep + restLen)) {
+                                    restLen++;
+                                }
+                                beatAbc += `z${restLen > 1 ? restLen : ''}`;
+                                s += restLen;
+                            }
+                        }
+                        measureAbcStr += beatAbc + " ";
+                    }
                 }
-                measureAbc += measureAbcStr;
-                abc += measureAbc + "| ";
                 
-                if ((mIndex + 1) % 4 === 0 && mIndex !== bassline.length - 1) {
-                    abc += "\n";
+                measureAbc += measureAbcStr.trim(); // 余分な末尾スペースを削除
+                
+                if (mIndex === bassline.length - 1) {
+                    abc += measureAbc + " |]\n"; // 曲の終わり
+                } else if ((mIndex + 1) % 4 === 0) {
+                    abc += measureAbc + " |\n";  // 4小節ごとに改行
+                } else {
+                    abc += measureAbc + " | ";   // 小節区切り
                 }
             });
             return abc;
@@ -639,6 +671,7 @@
                 oscillator: { type: "triangle" },
                 envelope: { attack: 0.05, decay: 0.5, sustain: 0.5, release: 0.8 }
             }).toDestination();
+            // 伴奏の音量を約20%（-3dB）下げました
             compSynth.volume.value = -15; 
 
             Tone.Transport.bpm.value = currentBpm;
