@@ -667,12 +667,16 @@
             }).toDestination();
             drumSynth.volume.value = -15;
             
-            compSynth = new Tone.PolySynth(Tone.Synth, {
-                oscillator: { type: "triangle" },
-                envelope: { attack: 0.05, decay: 0.5, sustain: 0.5, release: 0.8 }
+            // 音色をエレピ（FMSynth）に変更し、音量をもっと下げる
+            compSynth = new Tone.PolySynth(Tone.FMSynth, {
+                harmonicity: 3,
+                modulationIndex: 1.5,
+                oscillator: { type: "sine" },
+                envelope: { attack: 0.05, decay: 0.5, sustain: 0.4, release: 1.0 },
+                modulation: { type: "triangle" },
+                modulationEnvelope: { attack: 0.01, decay: 0.2, sustain: 0, release: 0.2 }
             }).toDestination();
-            // 伴奏の音量を約20%（-3dB）下げました
-            compSynth.volume.value = -15; 
+            compSynth.volume.value = -25; 
 
             Tone.Transport.bpm.value = currentBpm;
             synthsInitialized = true;
