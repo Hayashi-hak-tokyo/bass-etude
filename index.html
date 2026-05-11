@@ -523,8 +523,7 @@
             let abc = `X:1\nT:Bassline Etude\nM:4/4\nK:C\nL:1/16\nV:1 clef=bass\n%%stretchlast 1${staffWidth}\n`;
             
             bassline.forEach((measure, mIndex) => {
-                let chordDisplay = measure.chords.map(c => c.name).join(' ');
-                let measureAbc = `"${chordDisplay}" `;
+                let measureAbc = "";
                 let measureAccidentals = {};
                 
                 let measureAbcStr = "";
@@ -533,13 +532,22 @@
                     // Swing用のシンプルな描画ロジック（間延びを防ぎ、8分音符は2つで連桁する）
                     for (let beat = 0; beat < 4; beat++) {
                         let step = beat * 4;
+                        let chordSymbol = "";
+                        
+                        // 1拍目と3拍目にコードシンボルを配置
+                        if (beat === 0 && measure.chords[0]) {
+                            chordSymbol = `"${measure.chords[0].name}"`;
+                        } else if (beat === 2 && measure.chords.length > 1 && measure.chords[1]) {
+                            chordSymbol = `"${measure.chords[1].name}"`;
+                        }
+
                         const note1 = measure.notes.find(n => n.step === step);
                         
                         if (note1) {
                             if (note1.duration === '4n') {
-                                measureAbcStr += `${toAbcNote(note1.note, measureAccidentals)}4 `;
+                                measureAbcStr += `${chordSymbol}${toAbcNote(note1.note, measureAccidentals)}4 `;
                             } else if (note1.duration === '8n') {
-                                measureAbcStr += `${toAbcNote(note1.note, measureAccidentals)}2`;
+                                measureAbcStr += `${chordSymbol}${toAbcNote(note1.note, measureAccidentals)}2`;
                                 const note2 = measure.notes.find(n => n.step === step + 2);
                                 if (note2) {
                                     measureAbcStr += `${toAbcNote(note2.note, measureAccidentals)}2 `;
@@ -548,13 +556,23 @@
                                 }
                             }
                         } else {
-                            measureAbcStr += `z4 `;
+                            measureAbcStr += `${chordSymbol}z4 `;
                         }
                     }
                 } else {
                     // Funk用の描画ロジック
                     for (let beat = 0; beat < 4; beat++) {
                         let beatAbc = "";
+                        let chordSymbol = "";
+                        
+                        // 1拍目と3拍目にコードシンボルを配置
+                        if (beat === 0 && measure.chords[0]) {
+                            chordSymbol = `"${measure.chords[0].name}"`;
+                        } else if (beat === 2 && measure.chords.length > 1 && measure.chords[1]) {
+                            chordSymbol = `"${measure.chords[1].name}"`;
+                        }
+                        beatAbc += chordSymbol;
+
                         let s = 0;
                         while (s < 4) {
                             let absoluteStep = beat * 4 + s;
