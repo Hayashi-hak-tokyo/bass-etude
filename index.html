@@ -129,8 +129,8 @@
                         </div>
                     </div>
                   
-                    <button id="btnMetronome" class="flex items-center gap-2 px-3 py-1.5 border rounded-md transition-colors text-sm font-medium bg-blue-50 border-blue-200 text-blue-700">
-                        <i data-lucide="volume-2" class="w-4 h-4"></i> Click
+                    <button id="btnMetronome" class="flex items-center gap-2 px-3 py-1.5 border rounded-md transition-colors text-sm font-medium bg-white border-gray-300 text-gray-600">
+                        <i data-lucide="volume-x" class="w-4 h-4"></i> Click
                     </button>
                 </div>
             </div>
@@ -603,7 +603,7 @@
         let currentBpm = baseBpm;
         let bassline = [];
         let abcString = "";
-        let metronomeEnabled = true;
+        let metronomeEnabled = false;
         let isPracticeMode = false;
         let currentTime = 0;
         let isRepeat = true;
